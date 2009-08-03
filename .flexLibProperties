@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<flexLibProperties version="1">
+  <includeClasses>
+    <classEntry path="com.dasflash.soundcloud.as3api.SoundcloudClient"/>
+    <classEntry path="com.dasflash.soundcloud.as3api.SoundcloudDelegate"/>
+    <classEntry path="com.dasflash.soundcloud.as3api.SoundcloudResponseFormat"/>
+    <classEntry path="com.dasflash.soundcloud.as3api.SoundcloudURLs"/>
+    <classEntry path="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent"/>
+    <classEntry path="com.dasflash.soundcloud.as3api.events.SoundcloudEvent"/>
+    <classEntry path="com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent"/>
+  </includeClasses>
+  <includeResources/>
+  <namespaceManifests/>
+</flexLibProperties>
