@@ -5,8 +5,10 @@ package com.dasflash.soundcloud.as3api.events
 	/**
 	 * Event fired on erroneous API requests
 	 * 
+	 * @see http://github.com/dasflash/Soundcloud-AS3-API
+	 * 
 	 * @author Dorian Roy
-	 * http://www.dasflash.com
+	 * http://dasflash.com
 	 */
 	public class SoundcloudFaultEvent extends Event
 	{

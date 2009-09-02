@@ -22,7 +22,7 @@ package com.dasflash.soundcloud.as3api
 	import org.iotashan.oauth.OAuthRequest;
 	import org.iotashan.oauth.OAuthSignatureMethod_HMAC_SHA1;
 	import org.iotashan.oauth.OAuthToken;
-	
+
 
 	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudEvent", name="requestComplete")]
 	
@@ -30,6 +30,15 @@ package com.dasflash.soundcloud.as3api
 	
 	[Event(type="flash.events.ProgressEvent", name="progress")]
 	
+	
+	/**
+	 * This class represents a single call to the API
+	 * 
+	 * @see http://github.com/dasflash/Soundcloud-AS3-API
+	 * 
+	 * @author Dorian Roy
+	 * http://dasflash.com
+	 */
 
 	public class SoundcloudDelegate extends EventDispatcher
 	{
@@ -48,6 +57,8 @@ package com.dasflash.soundcloud.as3api
 		
 		/**
 		 * SoundcloudDelegate represents a single call to the Soundcloud API
+		 * The constructor builds the request object and adds the response listeners
+		 * The method execute() must be called subsequently to send the actual request
 		 * 
 		 * @param url				the full URL e.g. http://api.soundcloud.com/user/userid/tracks
 		 * 
@@ -59,48 +70,30 @@ package com.dasflash.soundcloud.as3api
 		 * 
 		 * @param token				The OAuth token
 		 * 
-		 * @param params			(optional) a generic object containing the request parameters
+		 * @param data				(optional) the data to be sent. This can be a generic object
+		 * 							containing request parameters as key/value pairs or a XML object
 		 * 
 		 * @param responseFormat	(optional) tells Soundcloud whether to render response as JSON or XML.
 		 * 							Value must be SoundcloudResponseFormat.JSON or .XML (default)
 		 * 
-		 * @param dataFormat		(optional) tells the URLLoader how to handler the returned data. Must
+		 * @param dataFormat		(optional) tells the URLLoader how to handle the returned data. Must
 		 * 							be URLLoaderDataFormat.TEXT, .VARIABLES or .BINARY. If responseFormat
 		 * 							is JSON or XML this parameter will be overriden with .TEXT
 		 * 
 		 * @author Dorian Roy
-		 * http://www.dasflash.com
+		 * http://dasflash.com
 		 */
 		public function SoundcloudDelegate(	url:String,
 											method:String,
 											consumer:OAuthConsumer,
 											token:OAuthToken,
-											params:Object=null,
+											data:Object=null,
 											responseFormat:String="",
 											dataFormat:String=""
 											)
 		{
+			// save response format. this will be needed to interpret the response data
 			this.responseFormat = responseFormat;
-			
-			// copy params to URLVariables object
-			var urlVars:URLVariables = new URLVariables();
-			
-			for (var n:String in params) {
-				
-				// look for a parameter containing a file reference
-				if (params[n] is FileReference) {
-					
-					// save parameters for upload
-					fileReference = params[n] as FileReference;
-					fileParameterName = n;
-					
-					// don't copy this to urlVar
-					continue;
-				}
-				
-				// copy parameter to urlVar
-				urlVars[n] = params[n];
-			}
 			
 			// if responseFormat is set
 			if (responseFormat) {
@@ -109,21 +102,82 @@ package com.dasflash.soundcloud.as3api
 				url += "." + responseFormat;
 			}
 			
-			// create request object
-			var oAuthRequest:OAuthRequest = new OAuthRequest(method, url, null, consumer, token);
+			// create a copy of the parameters object which will be populated with the oauth
+			// parameters and signed by the OAuthRequest object
+			var oauthParams:URLVariables = new URLVariables();
+			
+			var requestParams:URLVariables = new URLVariables();
+			
+			if(!(data is XML)) {
+				
+				for (var p:String in data) {
+					
+					// look for a parameter containing a file reference
+					if (data[p] is FileReference) {
+						
+						// save parameters for upload
+						fileReference = data[p] as FileReference;
+						fileParameterName = p;
+						
+					} else if (p.indexOf("oauth_") != -1) {
+						oauthParams[p] = data[p];
+					} else {
+						requestParams[p] = data[p];
+					}
+				}
+				
+			}
+			
+			// create request object and pass data
+			var oAuthRequest:OAuthRequest = new OAuthRequest(method, url, oauthParams, consumer, token);
 			
 			// build url with oauth parameters
+			// this will also add the oauth parameters and signature to the 
+			// oauthParams object
 			var signedURL:String = oAuthRequest.buildRequest(	signatureMethod,
 																OAuthRequest.RESULT_TYPE_URL_STRING, "");
-
+			
+			// copy added oauth params to requestparams
+			for (var o:String in oauthParams) {
+				
+				requestParams[o] = oauthParams[o];
+			}
+			
 			// create request object
-			urlRequest = new URLRequest(signedURL);
+			urlRequest = new URLRequest();
+			
+			// set content type
+			if (data is XML) {
+				
+				// send XML with application/xml header
+				urlRequest.contentType = "application/xml";
+				
+			// else treat data as a map of key/value pairs and send it as url-encoded variables
+			} else {
+			
+				// set header
+				urlRequest.contentType = fileReference ? "multipart/form-data" :"application/x-www-form-urlencoded";
+			}
 			
 			// set http method
 			urlRequest.method = method;
 			
-			// add parameters
-			urlRequest.data = urlVars;
+			// set url and parameters depending on the type of request
+			if (method == URLRequestMethod.GET) {
+				urlRequest.url = signedURL;
+				
+			} else if (fileReference) {
+				urlRequest.url = signedURL;
+				urlRequest.data = requestParams;
+				
+			} else if (data is XML) {
+				urlRequest.url = signedURL;
+				urlRequest.data = data;
+				
+			} else {
+				urlRequest.url = url;
+				urlRequest.data = requestParams;
+			}
 			
 			// if there is a file reference and method is POST this will be
 			// handled with FileReference.upload()
@@ -218,7 +272,15 @@ package com.dasflash.soundcloud.as3api
 		{
 			trace("httpStatusHandler "+event.status);
 			
+			// do nothing if this is not an error status
 			if (event.status < 400) return;
+			
+			// remove complete handler
+			if (event.target is FileReference) {
+				fileReference.removeEventListener(DataEvent.UPLOAD_COMPLETE_DATA, uploadCompleteDataHandler);
+			} else {
+				urlLoader.removeEventListener(Event.COMPLETE, urlLoaderCompleteHandler);
+			}
 			
 			var msg:String;
 			

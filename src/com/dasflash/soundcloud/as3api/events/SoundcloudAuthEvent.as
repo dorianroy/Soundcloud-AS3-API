@@ -7,8 +7,10 @@ package com.dasflash.soundcloud.as3api.events
 	/**
 	 * Event fired on successful authentication requests
 	 * 
+	 * @see http://github.com/dasflash/Soundcloud-AS3-API
+	 * 
 	 * @author Dorian Roy
-	 * http://www.dasflash.com
+	 * http://dasflash.com
 	 */
 	public class SoundcloudAuthEvent extends Event
 	{

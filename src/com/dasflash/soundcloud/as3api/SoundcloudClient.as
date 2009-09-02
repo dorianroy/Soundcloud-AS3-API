@@ -24,18 +24,23 @@ package com.dasflash.soundcloud.as3api
 	 * @see http://api.soundcloud.com/api
 	 * 
 	 * @author Dorian Roy
-	 * http://www.dasflash.com
+	 * http://dasflash.com
 	 */
+	 
+	 [Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="requestToken")]
+	 
+	 [Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="accessToken")]
+	 
+	 
 	public class SoundcloudClient extends EventDispatcher
 	{
 		// SC resource locations
-		protected const requestTokenURL:String		= "oauth/request_token";
-		protected const authorizeURL:String 		= "oauth/authorize";
-		protected const accessTokenURL:String		= "oauth/access_token";
+		protected const requestTokenResource:String		= "oauth/request_token";
+		protected const accessTokenResource:String		= "oauth/access_token";
 		
 		protected var consumerKey:String;
 		protected var consumerSecret:String;
-		protected var _useSandBox:Boolean;
+		protected var _useSandBox:Boolean;	
 		protected var _responseFormat:String;
 		
 		protected var consumer:OAuthConsumer;
@@ -63,7 +68,7 @@ package com.dasflash.soundcloud.as3api
 		public function SoundcloudClient(	consumerKey:String,
 											consumerSecret:String,
 											accessToken:OAuthToken=null,
-											useSandbox:Boolean=false,
+											useSandbox:Boolean=true,
 											responseFormat:String="xml" )
 		{
 			this.consumerKey = consumerKey;
@@ -87,6 +92,7 @@ package com.dasflash.soundcloud.as3api
 		 * 			on the page:
 		 * 			oauth_token: the request token the user authorized or denied
 		 * 			oauth_verifier: the verification code (only for OAuth 1.0a)
+		 * 
 		 * @return 	a SoundcloudDelegate instance you can attach a listener to for
 		 * 			the SoundcloudEvent and SoundcloudFault events
 		 */
@@ -98,16 +104,19 @@ package com.dasflash.soundcloud.as3api
 			// create parameter object
 			var requestParams:Object = {};
 			
+			// add OAuth version
+			requestParams.oauth_version = "1.0";
+			
 			// add oauth_callback parameter for OAuth 1.0a authentication
 			// if no callback is passed, this parameter is set to "oob" (out-of-band)
 			// @see http://oauth.googlecode.com/svn/spec/core/1.0a/drafts/3/oauth-core-1_0a.html#auth_step1
-			
-			// TODO activate this when Soundcloud implements OAuth 1.0a
-			// requestParams.oauth_callback = callbackURL || "oob";
+			// remove parameter oauth_callback in order to use the API in the old-fashioned
+			// 1.0-style (which may not be supported anymore when you read this)
+			requestParams.oauth_callback = callbackURL || "oob";
 			
 			// create request
-			var delegate:SoundcloudDelegate = createDelegate(requestTokenURL,
-															URLRequestMethod.GET,
+			var delegate:SoundcloudDelegate = createDelegate(requestTokenResource,
+															URLRequestMethod.POST,
 															requestParams,
 															"",
 															URLLoaderDataFormat.VARIABLES);
@@ -129,6 +138,8 @@ package com.dasflash.soundcloud.as3api
 			
 			// check if OAuth 1.0a parameter oauth_callback_confirmed is returned
 			if (responseVariables["oauth_callback_confirmed"] == "true") {
+				
+				// we need to submit a verification code
 				_verificationRequired = true;
 			}
 			
@@ -145,14 +156,14 @@ package com.dasflash.soundcloud.as3api
 		public function authorizeUser(targetWindow:String="_self"):void
 		{
 			// create url request
-			var userAuthReq:URLRequest = new URLRequest(soundCloudURL + authorizeURL);
+			var userAuthReq:URLRequest = new URLRequest(authURL);
 			
 			// add request parameters
 			var params:URLVariables = new URLVariables();
 			params["oauth_token"] = requestToken.key;
 			
 			// TODO delete this when Soundcloud implements OAuth 1.0a
-			if (callbackURL) params["oauth_callback"] = callbackURL;
+			// if (callbackURL) params["oauth_callback"] = callbackURL;
 			
 			userAuthReq.data = params;
 			
@@ -178,7 +189,7 @@ package com.dasflash.soundcloud.as3api
 			if (_verificationRequired) requestParams.oauth_verifier = verificationCode;
 			
 			// create request
-			var delegate:SoundcloudDelegate = createDelegate(	accessTokenURL,
+			var delegate:SoundcloudDelegate = createDelegate(	accessTokenResource,
 																URLRequestMethod.GET,
 																requestParams,
 																"",
@@ -216,11 +227,11 @@ package com.dasflash.soundcloud.as3api
 		 */
 		public function sendRequest(	resource:String,
 										method:String,
-										params:Object=null):SoundcloudDelegate
+										data:Object=null):SoundcloudDelegate
 		{
 			var delegate:SoundcloudDelegate = createDelegate(	resource,
 																method,
-																params,
+																data,
 																responseFormat,
 																URLLoaderDataFormat.TEXT,
 																accessToken);
@@ -241,7 +252,8 @@ package com.dasflash.soundcloud.as3api
 		 * 							only supports GET and POST as of this writing.
 		 * 							AIR supports all four methods.
 		 * 
-		 * @param params			(optional) a generic object containing the request parameters
+		 * @param data				(optional) the data to be sent. This can be a generic object
+		 * 							containing request parameters as key/value pairs or a XML object
 		 * 
 		 * @param responseFormat	(optional) "binary", "text" (default) or "variables"
 		 * 
@@ -253,7 +265,7 @@ package com.dasflash.soundcloud.as3api
 		 */
 		protected function createDelegate(	resource:String,
 											method:String,
-											params:Object=null,
+											data:Object=null,
 											responseFormat:String="",
 											dataFormat:String="",
 											requestToken:OAuthToken=null):SoundcloudDelegate
@@ -262,11 +274,11 @@ package com.dasflash.soundcloud.as3api
 			var token:OAuthToken = requestToken || accessToken;
 			
 			// create delegate
-			var delegate:SoundcloudDelegate = new SoundcloudDelegate(	soundCloudURL+resource,
+			var delegate:SoundcloudDelegate = new SoundcloudDelegate(	apiURL+resource,
 																		method,
 																		consumer,
 																		token,
-																		params,
+																		data,
 																		responseFormat,
 																		dataFormat);
 
@@ -314,7 +326,12 @@ package com.dasflash.soundcloud.as3api
 			return new OAuthToken(data["oauth_token"], data["oauth_token_secret"]);
 		}
 		
-		protected function get soundCloudURL():String
+		protected function get authURL():String
+		{
+			return useSandBox ? SoundcloudURLs.SANDBOX_AUTH_URL : SoundcloudURLs.LIVE_AUTH_URL;
+		}
+		
+		protected function get apiURL():String
 		{
 			return useSandBox ? SoundcloudURLs.SANDBOX_URL : SoundcloudURLs.LIVE_URL;
 		}
