@@ -4,6 +4,9 @@
 This project offers an easy to use AS3 wrapper for the Soundcloud API
 http://soundcloud.com/api
 
+See the github wiki for documentation and how to get started:
+http://wiki.github.com/dasflash/Soundcloud-AS3-API
+
 It is published as a Library Project for Flash Builder. If you want
 to use it with a different editor you can do so by simply checking out
 the content of the /src and /lib directories into the class path of
