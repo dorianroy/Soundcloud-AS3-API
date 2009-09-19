@@ -1,7 +1,6 @@
 package org.iotashan.oauth
 {
 	import flash.net.URLRequestHeader;
-	import flash.net.URLVariables;
 	
 	import mx.utils.UIDUtil;
 	
@@ -180,7 +179,7 @@ package org.iotashan.oauth
 			// loop over params, find the ones we need
 			for (var param:String in _requestParams) {
 				if (param != "oauth_signature")
-					aParams.push(param + "=" + URLEncoding.encode(_requestParams[param].toString()));
+					aParams.push( URLEncoding.encode(param) + "=" + URLEncoding.encode(_requestParams[param].toString()));
 			}
 
 			// put them in the right order

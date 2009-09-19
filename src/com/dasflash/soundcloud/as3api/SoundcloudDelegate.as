@@ -74,7 +74,8 @@ package com.dasflash.soundcloud.as3api
 		 * 							containing request parameters as key/value pairs or a XML object
 		 * 
 		 * @param responseFormat	(optional) tells Soundcloud whether to render response as JSON or XML.
-		 * 							Value must be SoundcloudResponseFormat.JSON or .XML (default)
+		 * 							Value must be SoundcloudResponseFormat.JSON, .XML or an empty String 
+		 * 							(default) which will also return XML
 		 * 
 		 * @param dataFormat		(optional) tells the URLLoader how to handle the returned data. Must
 		 * 							be URLLoaderDataFormat.TEXT, .VARIABLES or .BINARY. If responseFormat
@@ -99,16 +100,18 @@ package com.dasflash.soundcloud.as3api
 			if (responseFormat) {
 				
 				// add url extension
-				url += "." + responseFormat;
+				url += "." + responseFormat;// TODO temp
 			}
 			
 			// create a copy of the parameters object which will be populated with the oauth
 			// parameters and signed by the OAuthRequest object
 			var oauthParams:URLVariables = new URLVariables();
 			
+			// create an object with the actual request parameters
 			var requestParams:URLVariables = new URLVariables();
 			
-			if(!(data is XML)) {
+			// if data contains a hashmap of parameters
+			if (!(data is XML)) {
 				
 				for (var p:String in data) {
 					
@@ -118,22 +121,38 @@ package com.dasflash.soundcloud.as3api
 						// save parameters for upload
 						fileReference = data[p] as FileReference;
 						fileParameterName = p;
-						
+					
+					// else if this is an oauth parameters
 					} else if (p.indexOf("oauth_") != -1) {
+						
+						// add it to signable parameters
 						oauthParams[p] = data[p];
+						
 					} else {
+						
+						// otherwise add it to the actual request parameters
 						requestParams[p] = data[p];
+					}
+				}
+				
+				// if there was no FileReference (i.e. this is going to be a form-urlencoded request)
+				// and method is POST 
+				if (!fileReference && method==URLRequestMethod.POST) {
+					
+					// ensure ALL parameters get signed (OAuth special rule)
+					for (var n:String in data) {
+						oauthParams[n] = data[n];
 					}
 				}
 				
 			}
 			
-			// create request object and pass data
+			// create OAuthRequest object and pass oauthParams
 			var oAuthRequest:OAuthRequest = new OAuthRequest(method, url, oauthParams, consumer, token);
 			
 			// build url with oauth parameters
 			// this will also add the oauth parameters and signature to the 
-			// oauthParams object
+			// oauthParams object so we do this even if we don't need the signedURL later on
 			var signedURL:String = oAuthRequest.buildRequest(	signatureMethod,
 																OAuthRequest.RESULT_TYPE_URL_STRING, "");
 			
@@ -156,7 +175,7 @@ package com.dasflash.soundcloud.as3api
 			} else {
 			
 				// set header
-				urlRequest.contentType = fileReference ? "multipart/form-data" :"application/x-www-form-urlencoded";
+				urlRequest.contentType = fileReference ? "multipart/form-data" : "application/x-www-form-urlencoded";
 			}
 			
 			// set http method
@@ -164,16 +183,21 @@ package com.dasflash.soundcloud.as3api
 			
 			// set url and parameters depending on the type of request
 			if (method == URLRequestMethod.GET) {
-				urlRequest.url = signedURL;
 				
+				// GET needs to have all parameters in the query string
+				urlRequest.url = signedURL;
+			
+			// if this is going to be a file upload we also need the parameters in the query string
 			} else if (fileReference) {
 				urlRequest.url = signedURL;
 				urlRequest.data = requestParams;
-				
+			
+			// for an XML request we need to add the XML as the data
 			} else if (data is XML) {
 				urlRequest.url = signedURL;
 				urlRequest.data = data;
-				
+			
+			// otherwise we use the plain resource URI and all parameters go into the data object
 			} else {
 				urlRequest.url = url;
 				urlRequest.data = requestParams;
@@ -182,7 +206,7 @@ package com.dasflash.soundcloud.as3api
 			// if there is a file reference and method is POST this will be
 			// handled with FileReference.upload()
 			if (fileReference && method == URLRequestMethod.POST) {
-				
+			
 				fileReference.addEventListener(ProgressEvent.PROGRESS, uploadProgressHandler);
 				fileReference.addEventListener(DataEvent.UPLOAD_COMPLETE_DATA, uploadCompleteDataHandler);
 				fileReference.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
@@ -215,8 +239,6 @@ package com.dasflash.soundcloud.as3api
 		public function execute():void
 		{
 			if (fileReference) {
-				
-				trace("starting upload");
 				
 				// upload file
 				fileReference.upload(urlRequest, fileParameterName);
@@ -254,11 +276,19 @@ package com.dasflash.soundcloud.as3api
 			switch (responseFormat) {
 						
 				case SoundcloudResponseFormat.XML:
-					data = new XML(rawData as String);
+					try {
+						data = new XML(rawData as String);
+					} catch (error:Error) {
+						trace("couldn't parse XML: "+error.message);
+					}
 					break;
 							
 				case SoundcloudResponseFormat.JSON:
-					data = JSON.decode(rawData as String);
+					try {
+						data = JSON.decode(rawData as String);
+					} catch (error:Error) {
+						trace("couldn't parse JSON String: "+error.message);
+					}
 					break;
 					
 				default:

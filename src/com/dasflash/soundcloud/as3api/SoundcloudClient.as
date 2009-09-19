@@ -263,7 +263,11 @@ package com.dasflash.soundcloud.as3api
 		 * @param data				(optional) the data to be sent. This can be a generic object
 		 * 							containing request parameters as key/value pairs or a XML object
 		 * 
-		 * @param responseFormat	(optional) "binary", "text" (default) or "variables"
+		 * @param responseFormat	(optional) tells Soundcloud whether to render response as JSON or XML.
+		 * 							Value must be SoundcloudResponseFormat.JSON, .XML or an empty String 
+		 * 							(default) which will also return XML 
+		 * 
+		 * @param dataFormat		(optional) "binary", "text" (default) or "variables"
 		 * 
 		 * @param requestToken		(optional) overwrites the access token. Used to pass the 
 		 * 							request token when requesting an access token.
