@@ -49,6 +49,7 @@ package com.dasflash.soundcloud.as3api
 		
 		protected var _verificationRequired:Boolean;
 		protected var callbackURL:String;
+		protected var _useOAuth1_0:Boolean;
 		
 		
 		/**
@@ -110,9 +111,8 @@ package com.dasflash.soundcloud.as3api
 			// add oauth_callback parameter for OAuth 1.0a authentication
 			// if no callback is passed, this parameter is set to "oob" (out-of-band)
 			// @see http://oauth.googlecode.com/svn/spec/core/1.0a/drafts/3/oauth-core-1_0a.html#auth_step1
-			// remove parameter oauth_callback in order to use the API in the old-fashioned
-			// 1.0-style (which may not be supported anymore when you read this)
-			requestParams.oauth_callback = callbackURL || "oob";
+			// if useOAuth1_0 is true the callback is passed later in @see authorizeUser()
+			if (!useOAuth1_0) requestParams.oauth_callback = callbackURL || "oob";
 			
 			// create request
 			var delegate:SoundcloudDelegate = createDelegate(requestTokenResource,
@@ -130,6 +130,9 @@ package com.dasflash.soundcloud.as3api
 			return delegate;
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function getRequestTokenCompleteHandler(event:SoundcloudEvent):void	
 		{
 			var responseVariables:URLVariables = URLVariables(event.data);
@@ -162,9 +165,10 @@ package com.dasflash.soundcloud.as3api
 			var params:URLVariables = new URLVariables();
 			params["oauth_token"] = requestToken.key;
 			
-			// TODO delete this when Soundcloud implements OAuth 1.0a
-			// if (callbackURL) params["oauth_callback"] = callbackURL;
+			// add callback URL if it has been set before and useOAuth1_0 is true
+			if (useOAuth1_0 && callbackURL) params["oauth_callback"] = callbackURL;
 			
+			// assign parameters
 			userAuthReq.data = params;
 			
 			// open url in browser
@@ -176,6 +180,10 @@ package com.dasflash.soundcloud.as3api
 		 * 
 		 * this token will be used for all subsequent api calls. you can store it 
 		 * and reuse it the next time the current user uses your app
+		 * 
+		 * @param verificationCode The code that is displayed on the confirmation page
+		 * 			after user authorization. This parameter is optional because it 
+		 * 			won't be generated when you use legacy OAuth 1.0 authentication 
 		 * 
 		 * @return 	a SoundcloudDelegate instance you can attach a listener to for
 		 * 			the SoundcloudEvent and SoundcloudFault events
@@ -310,6 +318,20 @@ package com.dasflash.soundcloud.as3api
 		}
 
 		/**
+		 * Force OAuth 1.0 authentication (not recommended) 
+		 * @return 
+		 */
+		public function get useOAuth1_0():Boolean
+		{
+			return _useOAuth1_0;
+		}
+
+		public function set useOAuth1_0(value:Boolean):void
+		{
+			_useOAuth1_0 = value;
+		}
+
+		/**
 		 * @returns true if authentication is based on OAuth 1.0a and requires
 		 * 		the verification code from the authentication page
 		 */
@@ -335,6 +357,7 @@ package com.dasflash.soundcloud.as3api
 		{
 			return useSandBox ? SoundcloudURLs.SANDBOX_URL : SoundcloudURLs.LIVE_URL;
 		}
+
 		
 	}
 }
