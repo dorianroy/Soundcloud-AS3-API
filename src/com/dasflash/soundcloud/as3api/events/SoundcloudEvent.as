@@ -3,9 +3,7 @@ package com.dasflash.soundcloud.as3api.events
 	import flash.events.Event;
 	
 	/**
-	 * Basic event fired on successful requests to the Soundcloud API
-	 * 
-	 * @see http://github.com/dasflash/Soundcloud-AS3-API
+	 * Basic event fired on successful requests to the Soundcloud API.
 	 * 
 	 * @author Dorian Roy
 	 * http://dasflash.com
@@ -17,13 +15,13 @@ package com.dasflash.soundcloud.as3api.events
 		
 		
 		/**
-		 * contains the parsed response of an API call if it returns
-		 * XML or JSON format
+		 * Contains the parsed response of an API call if it returns
+		 * XML or JSON format.
 		 */
 		public var data:Object;
 		
 		/**
-		 * contains the raw response of an API call 
+		 * Contains the raw response of an API call.
 		 */
 		public var rawData:Object;
 		

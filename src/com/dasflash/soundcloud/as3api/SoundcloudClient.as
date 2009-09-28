@@ -12,13 +12,52 @@ package com.dasflash.soundcloud.as3api
 	
 	import org.iotashan.oauth.OAuthConsumer;
 	import org.iotashan.oauth.OAuthToken;
-
+	
 	/**
-	 * Base class of the Soundcloud API wrapper for AS3
+	 * Dispatched when the client receives a request token after <code>getRequestToken</code> has
+	 * been called.
 	 * 
-	 * Create an instance of this class and call its authentication methods to
+	 * <p>Wait for this event before continuing with the next step in the authentication process,
+	 * <code>authorizeUser</code></p>.
+	 *
+	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent.REQUEST_TOKEN
+	 */
+	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="requestToken")]
+ 
+ 	/**
+	 * Dispatched when the client receives an access token after <code>getAccessToken</code> has
+	 * been called.
+	 * 
+	 * <p>Wait for this event before calling any non-public resources. If you're building an AIR
+	 * application you can also use this event to store the access token in the local file system.</p>
+	 *
+	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent.ACCESS_TOKEN
+	 */
+	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="accessToken")]
+	 
+	/**
+	 * Central class of the Soundcloud API wrapper for AS3.
+	 * 
+	 * <p>Create an instance of this class and call its authentication methods to	
 	 * connect your app with the Soundcloud REST API. Once you're authenticated you
-	 * can call any resource through the sendRequest() method.
+	 * can call every resource through the <code>sendRequest</code> method.</p>
+	 * 
+	 * <p>You can also call public resources without going through the authentication
+	 * process.</p>
+	 * 
+	 * @example The following code retrieves a list of public tracks:
+	 * <listing version="3.0">
+	 * var scClient:SoundcloudClient = new SoundcloudClient();
+	 * 
+	 * var delegate:SoundcloudDelegate = scClient.sendRequest("tracks");
+	 * 
+	 * delegate.addEventListener(SoundcloudEvent.REQUEST_COMPLETE, requestCompleteHandler);
+	 * 
+	 * protected function requestCompleteHandler(event:SoundcloudEvent):void
+	 * {
+	 * 	 trace(event.data);
+	 * }
+	 * </listing>
 	 * 
 	 * @see http://github.com/dasflash/Soundcloud-AS3-API
 	 * @see http://api.soundcloud.com/api
@@ -26,12 +65,6 @@ package com.dasflash.soundcloud.as3api
 	 * @author Dorian Roy
 	 * http://dasflash.com
 	 */
-	 
-	 [Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="requestToken")]
-	 
-	 [Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="accessToken")]
-	 
-	 
 	public class SoundcloudClient extends EventDispatcher
 	{
 		// SC resource locations
@@ -40,34 +73,36 @@ package com.dasflash.soundcloud.as3api
 		
 		protected var consumerKey:String;
 		protected var consumerSecret:String;
-		protected var _useSandBox:Boolean;	
-		protected var _responseFormat:String;
-		
 		protected var consumer:OAuthConsumer;
 		protected var requestToken:OAuthToken;
 		protected var accessToken:OAuthToken;
-		
-		protected var _verificationRequired:Boolean;
 		protected var callbackURL:String;
-		protected var _useOAuth1_0:Boolean;
+		
+		private var _verificationRequired:Boolean;
+		private var _useOAuth1_0:Boolean;
+		private var _useSandBox:Boolean;
+		private var _responseFormat:String;
 		
 		
 		/**
-		 * create a Soundcloud API client
+		 * Creates a Soundcloud API client. <p>If no <code>consumerKey</code> and <code>consumerSecret</code> are passed
+		 * to this function you can only access public resources (e.g. "tracks") and cannot retrieve a request token.
+		 * Else if you have <code>consumerKey</code> and <code>consumerSecret</code> but no <code>accessToken</code>,
+		 * you can only call public resources and <code>getRequestToken</code>.</p>
 		 * 
-		 * @param consumerKey		the consumer key you receive when registering your app with Soundcloud
+		 * @param consumerKey		The consumer key you receive when registering your app with Soundcloud (optional).
 		 * 
-		 * @param consumerSecret	the consumer secret you receive when registering your app with Soundcloud
+		 * @param consumerSecret	The consumer secret you receive when registering your app with Soundcloud (optional).
 		 * 
-		 * @param accessToken		a previously retrieved access token for the current user (optional)
-		 * 
-		 * @param useSandbox		switch between the Soundcloud live system (false) and the developer
+		 * @param accessToken		A previously retrieved access token for the current user (optional).
+		 * 	
+		 * @param useSandbox		Switch between the Soundcloud live system (false) and the developer.
 		 * 							sandbox system (true, default)
 		 * 
-		 * @param responseFormat	"json" or "xml" (default)
+		 * @param responseFormat	"json" or "xml" (default).
 		 */
-		public function SoundcloudClient(	consumerKey:String,
-											consumerSecret:String,
+		public function SoundcloudClient(	consumerKey:String="",
+											consumerSecret:String="",
 											accessToken:OAuthToken=null,
 											useSandbox:Boolean=true,
 											responseFormat:String="xml" )
@@ -82,10 +117,10 @@ package com.dasflash.soundcloud.as3api
 		}
 		
 		/**
-		 * get a request token
+		 * Retrieves a request token.
 		 * 
-		 * this token must be traded for an access token by calling
-		 * getAccessToken() after user authentication
+		 * <p>This token must be traded for an access token by calling
+		 * getAccessToken() after user authentication</p>
 		 * 
 		 * @param callbackURL (optional)
 		 * 			the user will be redirected to this page after authentication.
@@ -150,13 +185,13 @@ package com.dasflash.soundcloud.as3api
 		}
 		
 		/**
-		 * open authorization page to grant data access for your app
+		 * Opens authorization page to grant data access for your app.
 		 * 
 		 * @param targetWindow (optional)
-		 * 		target window name, defaults to "_self". use "_blank" to open the
-		 * 		authentication page in a new window
+		 * 		Target window name, defaults to "_blank". Use "_self" to open the
+		 * 		authentication page in the current window
 		 */
-		public function authorizeUser(targetWindow:String="_self"):void
+		public function authorizeUser(targetWindow:String="_blank"):void
 		{
 			// create url request
 			var userAuthReq:URLRequest = new URLRequest(authURL);
@@ -176,16 +211,16 @@ package com.dasflash.soundcloud.as3api
 		}
 		
 		/**
-		 * get access token
+		 * Retrieves the access token.
 		 * 
-		 * this token will be used for all subsequent api calls. you can store it 
-		 * and reuse it the next time the current user uses your app
+		 * <p>This token will be used for all subsequent API calls. You should store it 
+		 * and reuse it the next time the current user opens your app.</p>
 		 * 
 		 * @param verificationCode The code that is displayed on the confirmation page
 		 * 			after user authorization. This parameter is optional because it 
 		 * 			won't be generated when you use legacy OAuth 1.0 authentication 
 		 * 
-		 * @return 	a SoundcloudDelegate instance you can attach a listener to for
+		 * @return 	A SoundcloudDelegate instance you can attach a listener to for
 		 * 			the SoundcloudEvent and SoundcloudFault events
 		 */		
 		public function getAccessToken(verificationCode:String=null):SoundcloudDelegate
@@ -213,6 +248,9 @@ package com.dasflash.soundcloud.as3api
 			return delegate;
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function getAccessTokenCompleteHandler(event:SoundcloudEvent):void
 		{
 			accessToken = createTokenFromURLVariables( URLVariables(event.data) );
@@ -221,16 +259,16 @@ package com.dasflash.soundcloud.as3api
 		}
 		
 		/**
-		 * Make a request to the API
+		 * Make a request to the API.
 		 * 
-		 * @param resource	the resource locator, e.g. user/userid/tracks
+		 * @param resource	The resource locator, e.g. "user/myUserId/tracks"
 		 * 
 		 * @param method	GET, POST, PUT or DELETE. Note that FlashPlayer	only supports GET
 		 * 					and POST as of this writing. AIR supports all four methods.
 		 * 
-		 * @param params	(optional) a generic object containing the request parameters
+		 * @param params	(optional) A generic object containing the request parameters
 		 * 
-		 * @return 			a SoundcloudDelegate instance you can attach a listener to for
+		 * @return 			A SoundcloudDelegate instance you can attach a listener to for
 		 * 					the SoundcloudEvent and SoundcloudFault events
 		 */
 		public function sendRequest(	resource:String,
@@ -252,27 +290,27 @@ package com.dasflash.soundcloud.as3api
 		}
 		
 		/**
-		 * Sends the actual API call
+		 * Sends the actual API call.
 		 * 
-		 * @param resource			the resource locator, e.g. user/userid/tracks
+		 * @param resource			The resource locator, e.g. "user/myUserId/tracks"
 		 * 
 		 * @param method			GET, POST, PUT or DELETE. Note that FlashPlayer
 		 * 							only supports GET and POST as of this writing.
 		 * 							AIR supports all four methods.
 		 * 
-		 * @param data				(optional) the data to be sent. This can be a generic object
+		 * @param data				(optional) The data to be sent. This can be a generic object
 		 * 							containing request parameters as key/value pairs or a XML object
 		 * 
-		 * @param responseFormat	(optional) tells Soundcloud whether to render response as JSON or XML.
+		 * @param responseFormat	(optional) Tells Soundcloud whether to render response as JSON or XML.
 		 * 							Value must be SoundcloudResponseFormat.JSON, .XML or an empty String 
 		 * 							(default) which will also return XML 
 		 * 
 		 * @param dataFormat		(optional) "binary", "text" (default) or "variables"
 		 * 
-		 * @param requestToken		(optional) overwrites the access token. Used to pass the 
+		 * @param requestToken		(optional) Overwrites the access token. Used to pass the 
 		 * 							request token when requesting an access token.
 		 * 
-		 * @return 					a SoundcloudDelegate instance you can attach a listener to
+		 * @return 					A SoundcloudDelegate instance you can attach a listener to
 		 * 							for the SoundcloudEvent and SoundcloudFault events
 		 */
 		protected function createDelegate(	resource:String,
@@ -301,6 +339,12 @@ package com.dasflash.soundcloud.as3api
 		
 		// GETTER / SETTER
 		
+		/**
+		 * Determines whether the SoundCloud sandbox system is used (recommended for testing) 
+		 * or the live service.
+		 * 
+		 * @return 
+		 */
 		public function get useSandBox():Boolean
 		{
 			return _useSandBox;
@@ -311,6 +355,13 @@ package com.dasflash.soundcloud.as3api
 			_useSandBox = value;
 		}
 		
+		/**
+		 * Sets the format of the server response (XML or JSON). The value must be
+		 * SoundcloudResponseFormat.JSON, .XML or an empty String (default) which
+		 * will also return XML.
+		 * 
+		 * @return 
+		 */
 		public function get responseFormat():String
 		{
 			return _responseFormat;
@@ -322,7 +373,7 @@ package com.dasflash.soundcloud.as3api
 		}
 
 		/**
-		 * Force OAuth 1.0 authentication (not recommended) 
+		 * Set to <code>true</code> for legacy OAuth 1.0 authentication (not recommended).
 		 * @return 
 		 */
 		public function get useOAuth1_0():Boolean
@@ -336,10 +387,11 @@ package com.dasflash.soundcloud.as3api
 		}
 
 		/**
-		 * @returns true if authentication is based on OAuth 1.0a and requires
+		 * @private
+		 * @return true if authentication is based on OAuth 1.0a and requires
 		 * 		the verification code from the authentication page
 		 */
-		public function get verificationRequired():Boolean
+		protected function get verificationRequired():Boolean
 		{
 			return _verificationRequired;
 		}
@@ -347,21 +399,29 @@ package com.dasflash.soundcloud.as3api
 		
 		// HELPER METHODS
 
+		/**
+		 * @private 
+		 */
 		protected function createTokenFromURLVariables(data:URLVariables):OAuthToken
 		{
 			return new OAuthToken(data["oauth_token"], data["oauth_token_secret"]);
 		}
 		
+		/**
+		 * @private 
+		 */
 		protected function get authURL():String
 		{
 			return useSandBox ? SoundcloudURLs.SANDBOX_AUTH_URL : SoundcloudURLs.LIVE_AUTH_URL;
 		}
 		
+		/**
+		 * @private 
+		 */
 		protected function get apiURL():String
 		{
 			return useSandBox ? SoundcloudURLs.SANDBOX_URL : SoundcloudURLs.LIVE_URL;
 		}
-
 		
 	}
 }

@@ -3,8 +3,6 @@ package com.dasflash.soundcloud.as3api
 	/**
 	 * Static URL constants of the Soundcloud API
 	 * 
-	 * @see http://github.com/dasflash/Soundcloud-AS3-API
-	 * 
 	 * @author Dorian Roy
 	 * http://dasflash.com
 	 */

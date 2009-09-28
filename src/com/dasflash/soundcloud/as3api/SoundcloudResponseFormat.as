@@ -3,9 +3,7 @@ package com.dasflash.soundcloud.as3api
 	import flash.net.URLLoaderDataFormat;
 	
 	/**
-	 * Static constants for Soundcloud API response formats
-	 * 
-	 * @see http://github.com/dasflash/Soundcloud-AS3-API
+	 * Static constants for the Soundcloud API response format.
 	 * 
 	 * @author Dorian Roy
 	 * http://dasflash.com

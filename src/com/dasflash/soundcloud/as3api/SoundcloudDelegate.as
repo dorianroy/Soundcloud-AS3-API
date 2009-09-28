@@ -23,23 +23,39 @@ package com.dasflash.soundcloud.as3api
 	import org.iotashan.oauth.OAuthSignatureMethod_HMAC_SHA1;
 	import org.iotashan.oauth.OAuthToken;
 
-
+	/**
+	 * Dispatched after the response has been downloaded and parsed successfully.
+	 *
+	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudEvent.REQUEST_COMPLETE
+	 */
 	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudEvent", name="requestComplete")]
 	
-	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudFault", name="fault")]
+	/**
+	 * Dispatched when a call has failed.
+	 *
+	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent.FAULT
+	 */
+	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent", name="fault")]
 	
+	/**
+	 * Progress event of file upload.
+	 *
+	 * @eventType flash.events.ProgressEvent.PROGRESS
+	 */
 	[Event(type="flash.events.ProgressEvent", name="progress")]
 	
 	
 	/**
-	 * This class represents a single call to the API
+	 * SoundcloudDelegate represents a single call to the API.
 	 * 
-	 * @see http://github.com/dasflash/Soundcloud-AS3-API
+	 * <p>Usually you don't create instances of this class directly; they get returned by
+	 * <code>SoundcloudClient.sendRequest</code>.</p>
+	 * 
+	 * @see SoundcloudClient#sendRequest
 	 * 
 	 * @author Dorian Roy
 	 * http://dasflash.com
 	 */
-
 	public class SoundcloudDelegate extends EventDispatcher
 	{
 		protected const signatureMethod:IOAuthSignatureMethod = new OAuthSignatureMethod_HMAC_SHA1();
@@ -56,19 +72,20 @@ package com.dasflash.soundcloud.as3api
 		
 		
 		/**
-		 * SoundcloudDelegate represents a single call to the Soundcloud API
-		 * The constructor builds the request object and adds the response listeners
-		 * The method execute() must be called subsequently to send the actual request
+		 * <p>The constructor only builds the request object and adds response listeners.
+		 * The method <code>execute</code> must be called subsequently to send the actual request.</p>
 		 * 
-		 * @param url				the full URL e.g. http://api.soundcloud.com/user/userid/tracks
+		 * @param url				The full URL, e.g. "http://api.soundcloud.com/user/userid/tracks"
 		 * 
 		 * @param method			GET, POST, PUT or DELETE. Note that FlashPlayer
 		 * 							only supports GET and POST as of this writing.
 		 * 							AIR supports all four methods.
 		 * 
-		 * @param consumer			The OAuth consumer
+		 * @param consumer			The OAuth consumer. This parameter is not optional, but the token can
+		 * 							be empty if you only want to access public resources.
 		 * 
-		 * @param token				The OAuth token
+		 * @param token				(optional) The OAuth token. If this parameter is omitted you can only
+		 * 							access public resources.
 		 * 
 		 * @param data				(optional) the data to be sent. This can be a generic object
 		 * 							containing request parameters as key/value pairs or a XML object
@@ -80,14 +97,11 @@ package com.dasflash.soundcloud.as3api
 		 * @param dataFormat		(optional) tells the URLLoader how to handle the returned data. Must
 		 * 							be URLLoaderDataFormat.TEXT, .VARIABLES or .BINARY. If responseFormat
 		 * 							is JSON or XML this parameter will be overriden with .TEXT
-		 * 
-		 * @author Dorian Roy
-		 * http://dasflash.com
 		 */
 		public function SoundcloudDelegate(	url:String,
 											method:String,
 											consumer:OAuthConsumer,
-											token:OAuthToken,
+											token:OAuthToken=null,
 											data:Object=null,
 											responseFormat:String="",
 											dataFormat:String=""
@@ -229,12 +243,11 @@ package com.dasflash.soundcloud.as3api
 				urlLoader.addEventListener(Event.COMPLETE, urlLoaderCompleteHandler);
 				urlLoader.addEventListener(HTTPStatusEvent.HTTP_STATUS, httpStatusHandler);
 				urlLoader.addEventListener(IOErrorEvent.IO_ERROR, ioErrorHandler);
-	//			urlLoader.addEventListener(HTTPStatusEvent["HTTP_RESPONSE_STATUS"], httpStatusHandler);
 			}
 		}
 		
 		/**
-		 * Send the request 
+		 * Sends the actual request. 
 		 */
 		public function execute():void
 		{
@@ -254,21 +267,34 @@ package com.dasflash.soundcloud.as3api
 			}
 		}
 		
+		
+		/**
+		 * @private
+		 */
 		protected function uploadProgressHandler(event:ProgressEvent):void
 		{
 			dispatchEvent(event);
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function uploadCompleteDataHandler(event:DataEvent):void
 		{
 			dispatchCompleteEvent(event.data);
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function urlLoaderCompleteHandler(event:Event):void
 		{
 			dispatchCompleteEvent(event.target.data);
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function dispatchCompleteEvent(rawData:Object):void
 		{
 			var data:Object;
@@ -298,12 +324,15 @@ package com.dasflash.soundcloud.as3api
 			dispatchEvent( new SoundcloudEvent(SoundcloudEvent.REQUEST_COMPLETE, data, rawData) );
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function httpStatusHandler(event:HTTPStatusEvent):void
 		{
 			trace("httpStatusHandler "+event.status);
 			
 			// do nothing if this is not an error status
-			if (event.status < 400) return;
+			if (event.status != 0 && event.status < 400) return;
 			
 			// remove complete handler
 			if (event.target is FileReference) {
@@ -344,6 +373,9 @@ package com.dasflash.soundcloud.as3api
 			dispatchEvent( new SoundcloudFaultEvent(SoundcloudFaultEvent.FAULT, msg, event.status) );
 		}
 		
+		/**
+		 * @private
+		 */
 		protected function ioErrorHandler(event:IOErrorEvent):void
 		{
 			dispatchEvent( new SoundcloudFaultEvent(SoundcloudFaultEvent.FAULT, event.text) );
