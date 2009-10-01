@@ -218,12 +218,15 @@ package com.dasflash.soundcloud.as3api
 		 * 
 		 * @param verificationCode The code that is displayed on the confirmation page
 		 * 			after user authorization. This parameter is optional because it 
-		 * 			won't be generated when you use legacy OAuth 1.0 authentication 
+		 * 			won't be generated when you use legacy OAuth 1.0 authentication
+		 * 
+		 * @param externalRequestToken A previously saved request token. You need to use this
+		 * 			parameter when you want to call getAccessToken from the callbackURL page
 		 * 
 		 * @return 	A SoundcloudDelegate instance you can attach a listener to for
 		 * 			the SoundcloudEvent and SoundcloudFault events
 		 */		
-		public function getAccessToken(verificationCode:String=null):SoundcloudDelegate
+		public function getAccessToken(verificationCode:String=null, externalRequestToken:OAuthToken=null):SoundcloudDelegate
 		{
 			// create parameter object
 			var requestParams:Object = {};
@@ -231,13 +234,16 @@ package com.dasflash.soundcloud.as3api
 			// add verification code if we're using OAuth 1.0a
 			if (_verificationRequired) requestParams.oauth_verifier = verificationCode;
 			
+			// external request token overrides the class variable
+			var token:OAuthToken = externalRequestToken || requestToken;
+			
 			// create request
 			var delegate:SoundcloudDelegate = createDelegate(	accessTokenResource,
 																URLRequestMethod.GET,
 																requestParams,
 																"",
 																URLLoaderDataFormat.VARIABLES,
-																requestToken);
+																token);
 			
 			// send request
 			delegate.execute();
