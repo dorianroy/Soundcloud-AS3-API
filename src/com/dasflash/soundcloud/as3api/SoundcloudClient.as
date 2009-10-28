@@ -137,6 +137,11 @@ package com.dasflash.soundcloud.as3api
 			// store callback URL
 			this.callbackURL = callbackURL;
 			
+			// clear tokens
+			// needed in case you want to re-authenticate to get a new token
+			accessToken = null;
+			requestToken = null;
+			
 			// create parameter object
 			var requestParams:Object = {};
 			
