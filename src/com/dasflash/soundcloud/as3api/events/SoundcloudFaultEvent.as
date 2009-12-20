@@ -13,6 +13,10 @@ package com.dasflash.soundcloud.as3api.events
 		
 		public static const FAULT:String = "fault";
 		
+		public static const REQUEST_TOKEN_FAULT:String = "requestTokenFault";
+		
+		public static const ACCESS_TOKEN_FAULT:String = "accessTokenFault";
+		
 		/**
 		 * contains a text message describing the error 
 		 */

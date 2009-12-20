@@ -16,7 +16,6 @@ package com.dasflash.soundcloud.as3api
 	import flash.net.URLRequest;
 	import flash.net.URLRequestMethod;
 	import flash.net.URLVariables;
-	
 	import org.iotashan.oauth.IOAuthSignatureMethod;
 	import org.iotashan.oauth.OAuthConsumer;
 	import org.iotashan.oauth.OAuthRequest;
@@ -257,6 +256,7 @@ package com.dasflash.soundcloud.as3api
 				fileReference.upload(urlRequest, fileParameterName);
 				
 			} else {
+				
 				// try to send request
 				try{
 					urlLoader.load(urlRequest);
@@ -266,7 +266,6 @@ package com.dasflash.soundcloud.as3api
 				}
 			}
 		}
-		
 		
 		/**
 		 * @private
@@ -302,18 +301,22 @@ package com.dasflash.soundcloud.as3api
 			switch (responseFormat) {
 						
 				case SoundcloudResponseFormat.XML:
+					
 					try {
 						data = new XML(rawData as String);
+						
 					} catch (error:Error) {
-						trace("couldn't parse XML: "+error.message);
+						dispatchFaultEvent("couldn't parse XML: "+error.message);
 					}
 					break;
 							
 				case SoundcloudResponseFormat.JSON:
+				
 					try {
 						data = JSON.decode(rawData as String);
+						
 					} catch (error:Error) {
-						trace("couldn't parse JSON String: "+error.message);
+						dispatchFaultEvent("couldn't parse JSON String: "+error.message);
 					}
 					break;
 					
@@ -327,10 +330,16 @@ package com.dasflash.soundcloud.as3api
 		/**
 		 * @private
 		 */
+		protected function dispatchFaultEvent(message:String, code:int=0):void
+		{
+			dispatchEvent( new SoundcloudFaultEvent(SoundcloudFaultEvent.FAULT, message, code) );
+		}
+		
+		/**
+		 * @private
+		 */
 		protected function httpStatusHandler(event:HTTPStatusEvent):void
 		{
-			trace("httpStatusHandler "+event.status);
-			
 			// do nothing if this is not an error status
 			if (event.status != 0 && event.status < 400) return;
 			
@@ -338,7 +347,11 @@ package com.dasflash.soundcloud.as3api
 			if (event.target is FileReference) {
 				fileReference.removeEventListener(DataEvent.UPLOAD_COMPLETE_DATA, uploadCompleteDataHandler);
 			} else {
-				urlLoader.removeEventListener(Event.COMPLETE, urlLoaderCompleteHandler);
+//				urlLoader.removeEventListener(Event.COMPLETE, urlLoaderCompleteHandler);
+				
+				// avoid RTE caused by unparsable URLVariables through switching expected response format
+				// to simple text
+				urlLoader.dataFormat = URLLoaderDataFormat.TEXT;
 			}
 			
 			var msg:String;
@@ -370,7 +383,7 @@ package com.dasflash.soundcloud.as3api
 				default: msg = "Unhandled HTTP status";
 			}
 			
-			dispatchEvent( new SoundcloudFaultEvent(SoundcloudFaultEvent.FAULT, msg, event.status) );
+			dispatchFaultEvent(msg, event.status);
 		}
 		
 		/**
@@ -378,7 +391,7 @@ package com.dasflash.soundcloud.as3api
 		 */
 		protected function ioErrorHandler(event:IOErrorEvent):void
 		{
-			dispatchEvent( new SoundcloudFaultEvent(SoundcloudFaultEvent.FAULT, event.text) );
+			dispatchFaultEvent(event.text);
 		}
 		
 	}

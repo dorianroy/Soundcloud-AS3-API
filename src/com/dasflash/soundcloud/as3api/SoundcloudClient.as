@@ -2,6 +2,7 @@ package com.dasflash.soundcloud.as3api
 {
 	import com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent;
 	import com.dasflash.soundcloud.as3api.events.SoundcloudEvent;
+	import com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent;
 	
 	import flash.events.EventDispatcher;
 	import flash.net.URLLoaderDataFormat;
@@ -18,7 +19,7 @@ package com.dasflash.soundcloud.as3api
 	 * been called.
 	 * 
 	 * <p>Wait for this event before continuing with the next step in the authentication process,
-	 * <code>authorizeUser</code></p>.
+	 * <code>authorizeUser</code>.</p>
 	 *
 	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent.REQUEST_TOKEN
 	 */
@@ -34,6 +35,27 @@ package com.dasflash.soundcloud.as3api
 	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent.ACCESS_TOKEN
 	 */
 	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudAuthEvent", name="accessToken")]
+	
+	/**
+	 * Dispatched when the request of <code>getRequestToken</code> has failed.
+	 * 
+	 * <p>This event most likely occurs when there are network problems. You can check this events
+	 * <code>message</code> and <code>errorCode</code> properties for details.</p>
+	 *
+	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent.REQUEST_TOKEN_FAULT
+	 */
+	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent", name="requestTokenFault")]
+ 
+ 	/**
+	 * Dispatched when the request of <code>getAccessToken</code> has failed.
+	 * 
+	 * <p>The most likely reason is that the verification code was wrong. Other reasons could be network
+	 * problems, a bad request token or an invalid user. You can check this events <code>message</code> and
+	 * <code>errorCode</code> properties for details.</p>
+	 *
+	 * @eventType com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent.ACCESS_TOKEN_FAULT
+	 */
+	[Event(type="com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent", name="accessTokenFault")]
 	 
 	/**
 	 * Central class of the Soundcloud API wrapper for AS3.
@@ -166,6 +188,7 @@ package com.dasflash.soundcloud.as3api
 			
 			// listen for response
 			delegate.addEventListener(SoundcloudEvent.REQUEST_COMPLETE, getRequestTokenCompleteHandler);
+			delegate.addEventListener(SoundcloudFaultEvent.FAULT, requestTokenFaultHandler);
 			
 			return delegate;
 		}
@@ -187,6 +210,14 @@ package com.dasflash.soundcloud.as3api
 			}
 			
 			dispatchEvent( new SoundcloudAuthEvent(SoundcloudAuthEvent.REQUEST_TOKEN, requestToken) );
+		}
+		
+		/**
+		 * @private
+		 */
+		protected function requestTokenFaultHandler(event:SoundcloudFaultEvent):void
+		{
+			dispatchEvent(new SoundcloudFaultEvent(SoundcloudFaultEvent.REQUEST_TOKEN_FAULT, event.message, event.errorCode));
 		}
 		
 		/**
@@ -255,6 +286,7 @@ package com.dasflash.soundcloud.as3api
 			
 			// listen for response
 			delegate.addEventListener(SoundcloudEvent.REQUEST_COMPLETE, getAccessTokenCompleteHandler);
+			delegate.addEventListener(SoundcloudFaultEvent.FAULT, accessTokenFaultHandler);
 			
 			return delegate;
 		}
@@ -267,6 +299,14 @@ package com.dasflash.soundcloud.as3api
 			accessToken = createTokenFromURLVariables( URLVariables(event.data) );
 			
 			dispatchEvent( new SoundcloudAuthEvent(SoundcloudAuthEvent.ACCESS_TOKEN, accessToken) ); 
+		}
+		
+		/**
+		 * @private
+		 */
+		protected function accessTokenFaultHandler(event:SoundcloudFaultEvent):void
+		{
+			dispatchEvent(new SoundcloudFaultEvent(SoundcloudFaultEvent.ACCESS_TOKEN_FAULT, event.message, event.errorCode));
 		}
 		
 		/**
