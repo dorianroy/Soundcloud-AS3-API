@@ -4,6 +4,7 @@ package com.dasflash.soundcloud.as3api
 	import com.dasflash.soundcloud.as3api.events.SoundcloudEvent;
 	import com.dasflash.soundcloud.as3api.events.SoundcloudFaultEvent;
 	
+	import flash.errors.IllegalOperationError;
 	import flash.events.EventDispatcher;
 	import flash.net.URLLoaderDataFormat;
 	import flash.net.URLRequest;
@@ -267,8 +268,13 @@ package com.dasflash.soundcloud.as3api
 			// create parameter object
 			var requestParams:Object = {};
 			
-			// add verification code if we're using OAuth 1.0a
-			if (_verificationRequired) requestParams.oauth_verifier = verificationCode;
+			// throw error if verification is required but not provided
+			if (verificationRequired && !verificationCode) {
+				throw new IllegalOperationError("verification code is required but no code has been provided");
+			}
+			
+			// add verification code if available 
+			if (verificationCode) requestParams.oauth_verifier = verificationCode;
 			
 			// external request token overrides the class variable
 			var token:OAuthToken = externalRequestToken || requestToken;
