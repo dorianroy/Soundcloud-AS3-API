@@ -16,6 +16,7 @@ package com.dasflash.soundcloud.as3api
 	import flash.net.URLRequest;
 	import flash.net.URLRequestMethod;
 	import flash.net.URLVariables;
+	
 	import org.iotashan.oauth.IOAuthSignatureMethod;
 	import org.iotashan.oauth.OAuthConsumer;
 	import org.iotashan.oauth.OAuthRequest;
@@ -195,9 +196,9 @@ package com.dasflash.soundcloud.as3api
 			urlRequest.method = method;
 			
 			// set url and parameters depending on the type of request
-			if (method == URLRequestMethod.GET) {
+			if (method == URLRequestMethod.GET || method == "DELETE") {
 				
-				// GET needs to have all parameters in the query string
+				// GET and DELETE need to have all parameters in the query string
 				urlRequest.url = signedURL;
 			
 			// if this is going to be a file upload we also need the parameters in the query string
