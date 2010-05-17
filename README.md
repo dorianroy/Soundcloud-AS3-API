@@ -1,7 +1,7 @@
 
 *** SOUNDCLOUD AS3 API ***
 
-
+[![Flattr this](http://api.flattr.com/button/button-compact-static-100x17.png)](http://flattr.com/thing/2773/Soundcloud-AS3-API)
 
 This project offers an easy to use AS3 wrapper for the Soundcloud API
 http://soundcloud.com/api
