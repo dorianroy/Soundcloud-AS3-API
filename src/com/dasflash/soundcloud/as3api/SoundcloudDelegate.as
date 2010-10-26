@@ -269,6 +269,16 @@ package com.dasflash.soundcloud.as3api
 		}
 
 		/**
+		 * Returns the signed URLRequest of this delegate
+		 *
+		 * @return URLRequest
+		 */
+		public function getUrlRequest():URLRequest
+		{
+			return urlRequest;
+		}
+
+		/**
 		 * @private
 		 */
 		protected function uploadProgressHandler(event:ProgressEvent):void

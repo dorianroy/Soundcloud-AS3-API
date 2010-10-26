@@ -331,7 +331,7 @@ package com.dasflash.soundcloud.as3api
 		 * @param method	GET, POST, PUT or DELETE. Note that FlashPlayer	only supports GET
 		 * 					and POST as of this writing. AIR supports all four methods.
 		 *
-		 * @param params	(optional) A generic object containing the request parameters
+		 * @param data		(optional) A generic object containing the request parameters
 		 *
 		 * @return 			A SoundcloudDelegate instance you can attach a listener to for
 		 * 					the SoundcloudEvent and SoundcloudFault events
@@ -355,7 +355,40 @@ package com.dasflash.soundcloud.as3api
 		}
 
 		/**
-		 * Sends the actual API call.
+		 * Get a signed URLRequest object
+		 *
+		 * @param resource	The resource locator, e.g. "user/myUserId/tracks"
+		 *
+		 * @param method	GET, POST, PUT or DELETE. Note that FlashPlayer	only supports GET
+		 * 					and POST as of this writing. AIR supports all four methods. Defaults to GET.
+		 *
+		 * @param data		(optional) A generic object containing the request parameters
+		 *
+		 * @param responseFormat	(optional) Tells Soundcloud whether to render response as JSON or XML.
+		 * 							Value must be SoundcloudResponseFormat.JSON, .XML or an empty String
+		 * 							(default) which will also return XML unless you request a sound file
+		 *
+		 * @return 			A URLRequest with signed parameters that can be loaded through
+		 *                  a custom Sound object or URLLoader for example
+		 */
+		public function getSignedURLRequest(resource:String,
+			method:String="GET",
+			data:Object=null,
+			responseFormat:String=""):URLRequest
+		{
+			var delegate:SoundcloudDelegate = createDelegate(resource,
+				method,
+				data,
+				responseFormat,
+				"",
+				accessToken);
+
+			// return url request of this delegate
+			return delegate.getUrlRequest();
+		}
+
+		/**
+		 * Creates a delegate object
 		 *
 		 * @param resource			The SoundCLoud resource, e.g. "user/myUserId/tracks" or
 		 * 							a full URL like http://media.soundcloud.com/stream/xyz
@@ -369,7 +402,7 @@ package com.dasflash.soundcloud.as3api
 		 *
 		 * @param responseFormat	(optional) Tells Soundcloud whether to render response as JSON or XML.
 		 * 							Value must be SoundcloudResponseFormat.JSON, .XML or an empty String
-		 * 							(default) which will also return XML
+		 * 							(default) which will also return XML unless you request a sound file
 		 *
 		 * @param dataFormat		(optional) "binary", "text" (default) or "variables"
 		 *
