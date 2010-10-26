@@ -7,7 +7,7 @@ This project offers an easy to use AS3 wrapper for the Soundcloud API
 http://soundcloud.com/api
 
 See the github wiki for documentation and how to get started:
-http://wiki.github.com/dasflash/Soundcloud-AS3-API
+http://wiki.github.com/dorianroy/Soundcloud-AS3-API
 
 It is published as a Library Project for Flash Builder. If you want
 to use it with a different editor you can do so by simply checking out
@@ -28,7 +28,7 @@ This project is published under the MIT License. That means you can use
 it for commercial projects. See LICENSE.txt for details.
 
 Please use github's issues management if you encounter any bugs:
-http://github.com/dasflash/Soundcloud-AS3-API/issues
+http://github.com/dorianroy/Soundcloud-AS3-API/issues
 
 Feel free to drop me a mail if you have feature requests or would like to
 contribute to this project
